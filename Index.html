@@ -1,0 +1,144 @@
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Kevin - Processamento de imagem</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column-reverse;
+    }
+    button {
+      background: #212121;
+      border: 1px solid;
+      border-left-color: white;
+      border-top-color: white;
+      border-bottom-color: orange;
+      border-right-color: orange;
+      padding: 10px;
+      color: snow;
+    }
+    img { max-width: 400px; background-color: white }
+    div {
+      width: 400px;
+      color: darkblue;
+      font-size: 40px;
+      text-align: center;
+      text-shadow: 2px 0 0 #fff, -2px 0 0 #fff, 0 2px 0 #fff, 0 -2px 0 #fff, 1px 1px #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff;
+      height: 200px;
+    }
+    div::before {
+      content: attr(data-content);
+      margin: auto;
+      padding: 29%;
+    }
+    div::after {
+      content: ' Cor mais comum ';
+    }
+    span { margin: 10px }
+  </style>
+</head>
+
+<body>
+  <span>
+    <button onclick="getImg1()">Imagem 1</button>
+    <button onclick="getImg2()">Imagem 2</button>
+    <button onclick="getImg3()">Imagem 3</button>
+    <button onclick="getImg4()">Imagem 4</button>
+  </span>
+  <script>
+    /* **** CRIANDO REFERÊNCIAS ****  */
+    const body = document.querySelector('body')
+    const div = document.createElement('div')
+    const canvas = document.createElement('canvas')
+    const context = canvas.getContext('2d')
+    const image = new Image()
+    
+    /***** FUNÇÕES DOS BOTÕES, PARA TROCA DE IMAGEM  ****/
+    const getImg1 = () => image.src = './image1.jpg'
+    const getImg2 = () => image.src = './image2.png'
+    const getImg3 = () => image.src = './image3.jpg'
+    const getImg4 = () => image.src = './image4.png'
+    /***** SETANDO UMA REFERÊNCIA DE IMAGEM *****/
+    image.src = getImg1()
+    
+    /****** ARREDONDA PARA UM NÚMERO MAIS PRÓXIMO DO MULTIPLO DE 5. PARA DAR UMA TOLERÂNCIA PARA TONS PRÓXIMOS *****/
+    const round = tolerancia => 5 * (Math.round(tolerancia / 5))
+   
+   /**** PASSANDO CADA PIXEL PARA O FORMATO DE DE 8BITS (256 | 0-255) ****/
+    const componentToHex = c => {
+      const hex = c.toString(16)
+      return hex.length == 1 ? "0" + hex : hex
+    }
+    /***** TRANSFORMANDO RGB EM HEXADECIMAL *****/
+    const rgbToHex = (r, g, b) =>
+      `#${componentToHex(r)}${componentToHex(g)}${componentToHex(b)}`
+   
+   /***** OBTENDO O HISTOGRAMA DA IMAGEM *****/
+    const histogram = imageMap => {
+      const histogram = []
+      const len = imageMap.length
+      let hex, r, g, b
+      for (let i = 0; i < len; i += 3) {
+        r = round(imageMap[i])
+        g = round(imageMap[i + 1])
+        b = round(imageMap[i + 2])
+        //valor em hexadecimal
+        hex = rgbToHex(r, g, b)
+        //adiciona no histogram
+        histogram[hex] === undefined ?
+          histogram[hex] = 1 :
+          histogram[hex]++
+      }
+      return histogram
+    }
+   
+   // OBTEM A COR PREDOMINANTE
+    const predominantColor = histogram => {
+      return Object.entries(histogram)
+        .reduce((mostFrequentColor, color) => {
+          return mostFrequentColor < color[1] ?
+            mostFrequentColor = color[1] :
+            mostFrequentColor
+        })[0]
+    }
+   
+   // APOS CARREGAR A IMAGEM
+    const getColorAndSetDivWithPredColor = () => {
+      body.append(image)
+      // CRIE UM CANVAS [INVISIVEL]
+      canvas.width = image.width
+      canvas.height = image.height
+      
+      // DESENHA A IMAGEM NO CANVAS
+      context.drawImage(image, 0, 0, image.width, image.height)
+      // RECUPERA O VETOR DE CORES
+      const map = context.getImageData(0, 0, image.width, image.height).data
+      
+      // RECUPERA OS COMPONENTES DE UM PONTO
+      const hist = histogram(map)
+      console.log(' HISTOGRAMA: ', hist)
+      // RECUPERA A COR PREDOMINANTE [A QUE MAIS SE REPETE]
+      const corPred = predominantColor(hist)
+     
+      // ================
+      console.log(' =========== ')
+      console.log(' COR PREDOMINANTE: ', corPred)
+      console.log(' =========== ')
+      // ==================================
+   
+     /*** SETA  O ESTILO DA DIV COM A COR PREDONIMANTE. MONSTRANDO A COR EXTATA  ***/
+      body.style.backgroundColor = corPred
+      div.dataset.content = corPred
+      //adiciona um div como exempl
+      body.append(div)
+    }
+    image.onload = getColorAndSetDivWithPredColor
+  </script>
+</body>
+
+</html>
